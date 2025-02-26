@@ -25,6 +25,7 @@ class MyApp extends StatelessWidget {
 
 class MyHomePage extends StatelessWidget {
   const MyHomePage({super.key});
+  
   Future<List<Karyawan>> _readJsonData() async {
     String response = await rootBundle.loadString("assets/karyawan.json");
     final List<dynamic> data = json.decode(response);
@@ -39,39 +40,49 @@ class MyHomePage extends StatelessWidget {
         title: const Text("Daftar Karyawan"),
       ),
       body: FutureBuilder<List<Karyawan>>(
-          future: _readJsonData(),
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              return ListView.builder(
-                  itemCount: snapshot.data!.length,
-                  itemBuilder: (context, index) {
-                    return ListTile(
-                        title: Text(
-                          snapshot.data![index].nama,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Umur: ${snapshot.data![index].umur} tahun"),
-                            Text(
-                                "Alamat: ${snapshot.data![index].alamat.jalan}, "
-                                "${snapshot.data![index].alamat.kota}, "
-                                "${snapshot.data![index].alamat.provinsi}"),
-                            if (snapshot.data![index].hobi.length > 1)
-                              Text("Hobi: ${snapshot.data![index].hobi}")
-                          ],
-                        ));
-                  });
-            } else if (snapshot.hasError) {
-              return Center(
-                child: Text('${snapshot.error}'),
-              );
-            }
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }),
+        future: _readJsonData(),
+        builder: (context, snapshot) {
+          return const FallingLoadingIndicator();
+        }
+      ),
+    );
+  }
+}
+
+class FallingLoadingIndicator extends StatefulWidget {
+  const FallingLoadingIndicator({super.key});
+
+  @override
+  State<FallingLoadingIndicator> createState() => _FallingLoadingIndicatorState();
+}
+
+class _FallingLoadingIndicatorState extends State<FallingLoadingIndicator> {
+  double _topPosition = 0;
+  bool _isFalling = false;
+
+  void _startFalling() {
+    setState(() {
+      _isFalling = true;
+      _topPosition = MediaQuery.of(context).size.height - 100; // Falls to bottom
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 1000),
+          curve: Curves.bounceOut,
+          margin: EdgeInsets.only(top: _topPosition),
+          child: Center(
+            child: GestureDetector(
+              onTap: _startFalling,
+              child: const CircularProgressIndicator(),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
