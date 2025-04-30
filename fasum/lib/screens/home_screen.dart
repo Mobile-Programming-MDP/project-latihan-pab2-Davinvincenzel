@@ -61,11 +61,19 @@ class HomeScreen extends StatelessWidget {
               final data = posts[index].data();
               final imageBase64 = data['image'];
               final description = data['description'];
-              final createdAtStr = data['createdAt'];
               final fullName = data['fullName'] ?? 'Anonim';
 
-              //parse ke DateTime
-              final createdAt = DateTime.parse(createdAtStr);
+              DateTime createdAt;
+              final createdAtValue = data['createdAt'];
+
+              if (createdAtValue is Timestamp) {
+                createdAt = createdAtValue.toDate();
+              } else if (createdAtValue is String) {
+                createdAt = DateTime.parse(createdAtValue);
+              } else {
+                createdAt = DateTime.now();
+              }
+
               return Card(
                 margin: const EdgeInsets.all(10),
                 shape: RoundedRectangleBorder(

@@ -9,6 +9,7 @@ plugins {
 }
 
 android {
+    compileSdkVersion 35
     namespace = "com.example.fasum"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
