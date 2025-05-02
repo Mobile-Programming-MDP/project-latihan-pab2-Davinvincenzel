@@ -1,0 +1,22 @@
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+
+class FullImageScreen extends StatelessWidget {
+  final String imageBase64;
+const FullImageScreen({super.key, required this.imageBase64,});
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        backgroundColor: Colors.black,
+      body: Center(
+        child: InteractiveViewer(child: 
+        Image.memory(base64Decode(imageBase64),fit: BoxFit.contain))
+        ),
+      );
+      
+    
+  }
+}
