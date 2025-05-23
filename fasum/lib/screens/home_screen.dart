@@ -7,6 +7,8 @@ import 'package:fasum/screens/edit_post_screen.dart';
 import 'package:fasum/screens/my_posts_screen.dart';
 import 'package:fasum/screens/sign_in_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:intl/intl.dart';
@@ -63,7 +65,6 @@ class _HomeScreenState extends State<HomeScreen> {
         MaterialPageRoute(builder: (context) => const SignInScreen()));
   }
 
-  //ambil dari https://pastebin.com/8BXgdv3M
   void _showCategoryFilter() async {
     final result = await showModalBottomSheet<String?>(
       context: context,
@@ -165,10 +166,50 @@ class _HomeScreenState extends State<HomeScreen> {
       } else {
         // Like the post
         likes.add(currentUser.uid);
+        sendLikeNotification(postId);
       }
 
       await postRef.update({'likes': likes});
     }
+  }
+
+//send notification to post owner
+  void sendLikeNotification(String postId) async {
+    final postSnapshot =
+        await FirebaseFirestore.instance.collection("posts").doc(postId).get();
+    final postOwnerData = postSnapshot.data()!;
+    final postOwnerId = postOwnerData['userId'];
+    final postOwnerSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(postOwnerId)
+        .get();
+    final postOwnerToken = postOwnerSnapshot.data()?['token'];
+    if (postOwnerToken != null) {
+      sendNotificationDevice(
+          postOwnerToken,
+          'New Like on Your Post',
+          "Someone liked your post with topic ${postOwnerData['category']}",
+          postOwnerData['image']);
+    }
+  }
+
+  Future<void> sendNotificationDevice(
+      String token, String title, String body, String image) async {
+    final url =
+        Uri.parse('https://fasum-cloud-lemon.vercel.app/send-to-device');
+    //ganti dengan url vercel masing-masing
+    await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        "token": token,
+        "title": title,
+        "body": body,
+        //"senderPhotoUrl": image
+      }),
+    );
   }
 
   void _showComments(String postId) {
@@ -336,12 +377,27 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  //simpan token ke firestore
+  void saveToken(String token, String uid) async {
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .update({'token': token});
+  }
+
   @override
   void initState() {
     super.initState();
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null) {
       _currentUserId = currentUser.uid;
+      // Mendapatkan token FCM
+      FirebaseMessaging.instance.getToken().then((token) {
+        if (token != null) {
+          saveToken(token, currentUser.uid);
+          print("FCM Token: $token");
+        }
+      });
     }
   }
 
@@ -411,11 +467,11 @@ class _HomeScreenState extends State<HomeScreen> {
               itemCount: posts.length,
               itemBuilder: (context, index) {
                 final data = posts[index].data();
-                final imageBase64 = data['image'];
-                final description = data['description'];
+                final imageBase64 = data['image'] ?? "";
+                final description = data['description'] ?? "";
                 final fullName = data['fullName'] ?? 'Anonim';
-                final latitude = data['latitude'];
-                final longitude = data['longitude'];
+                final latitude = data['latitude'] ?? 0.0;
+                final longitude = data['longitude'] ?? 0.0;
                 final category = data['category'] ?? 'Lainnya';
                 final userId = data['userId'] ?? "";
                 //parse ke DateTime

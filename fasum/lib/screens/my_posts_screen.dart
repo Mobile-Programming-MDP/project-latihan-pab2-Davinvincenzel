@@ -111,8 +111,8 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
               final imageBase64 = data['image'];
               final description = data['description'];
               final fullName = data['fullName'] ?? 'Anonim';
-              final latitude = data['latitude'];
-              final longitude = data['longitude'];
+              final latitude = data['latitude'] ?? 0.0;
+              final longitude = data['longitude'] ?? 0.0;
               final category = data['category'] ?? 'Lainnya';
               //parse ke DateTime
               DateTime createdAt;
